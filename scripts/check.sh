@@ -29,12 +29,21 @@ done
 
 set -- "${POSITIONAL[@]}"
 
-cmd=""
+cmd="javac "
+cmd+="-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED "
+cmd+="-J--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED "
+cmd+="-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED "
+cmd+="-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED "
+cmd+="-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED "
+cmd+="-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED "
+cmd+="-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED "
+cmd+="-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED "
+cmd+="-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED "
 
 if [ "$DEBUG" == "" ]; then
-	cmd="javac -cp "${CLASSPATH}" -processor "${CHECKER}" "$@""
+	cmd+="-cp "${CLASSPATH}" -processor "${CHECKER}" "$@""
 else
-	cmd="javac "$DEBUG" -cp "${CLASSPATH}" -processor "${CHECKER}" -AatfDoNotCache "$@""
+	cmd+=$DEBUG" -cp "${CLASSPATH}" -processor "${CHECKER}" -AatfDoNotCache "$@""
 fi
 
 echo "$cmd"
