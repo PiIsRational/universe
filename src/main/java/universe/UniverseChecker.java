@@ -27,6 +27,6 @@ public class UniverseChecker extends BaseTypeChecker {
 
     @Override
     protected BaseTypeVisitor<?> createSourceVisitor() {
-        return new UniverseVisitor(this, new UniverseAnnotatedTypeFactory(this, false));
+        return new UniverseVisitor(this, new UniverseAnnotatedTypeFactory(this));
     }
 }

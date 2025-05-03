@@ -9,7 +9,6 @@ import static universe.UniverseAnnotationMirrorHolder.SELF;
 
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ClassTree;
-import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewArrayTree;
@@ -20,7 +19,6 @@ import com.sun.source.tree.VariableTree;
 
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
-import org.checkerframework.framework.type.AnnotatedTypeFactory.ParameterizedExecutableType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
@@ -77,22 +75,21 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
     /** Universe does not use receiver annotations, forbid them. */
     @Override
     public Void visitMethod(MethodTree node, Void p) {
-        AnnotatedExecutableType executableType = atypeFactory.getAnnotatedType(node);
+        var executableType = atypeFactory.getAnnotatedType(node);
 
         if (TreeUtils.isConstructor(node)) {
-            AnnotatedDeclaredType constructorReturnType =
-                    (AnnotatedDeclaredType) executableType.getReturnType();
+            var constructorReturnType = (AnnotatedDeclaredType) executableType.getReturnType();
             if (!constructorReturnType.hasAnnotation(SELF)) {
                 checker.reportError(node, "uts.constructor.not.self");
             }
         } else {
-            AnnotatedDeclaredType declaredReceiverType = executableType.getReceiverType();
-            if (declaredReceiverType != null) {
-                if (!declaredReceiverType.hasAnnotation(SELF)) {
-                    checker.reportError(node, "uts.receiver.not.self");
-                }
+            var declaredReceiverType = executableType.getReceiverType();
+
+            if (declaredReceiverType != null && !declaredReceiverType.hasAnnotation(SELF)) {
+                checker.reportError(node, "uts.receiver.not.self");
             }
         }
+
         return super.visitMethod(node, p);
     }
 
@@ -114,6 +111,7 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
                 overridden,
                 overriddenType,
                 overriddenReturnType) {
+
             @Override
             protected boolean checkReceiverOverride() {
                 return true;
@@ -138,11 +136,11 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
      */
     @Override
     public Void visitNewClass(NewClassTree node, Void p) {
-        ParameterizedExecutableType fromUse = atypeFactory.constructorFromUse(node);
-        AnnotatedExecutableType constructor = fromUse.executableType;
+        var fromUse = atypeFactory.constructorFromUse(node);
+        var constructor = fromUse.executableType;
 
         // Check for @Lost in combined parameter types deeply.
-        for (AnnotatedTypeMirror parameterType : constructor.getParameterTypes()) {
+        for (var parameterType : constructor.getParameterTypes()) {
             if (AnnotatedTypes.containsModifier(parameterType, LOST)) {
                 checker.reportError(node, "uts.lost.parameter");
             }
@@ -161,18 +159,14 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
     }
 
     private void checkNewInstanceCreation(Tree node) {
-        AnnotatedTypeMirror type = atypeFactory.getAnnotatedType(node);
+        var type = atypeFactory.getAnnotatedType(node);
         // Check for @Peer or @Rep as top-level modifier.
         // TODO I would say here by top-level, it's really main modifier instead of upper bounds of
         // type variables, as there is no "new T()" to create a new instance.
-        if (UniverseTypeUtil.isImplicitlyBottomType(type)) {
-            if (!type.hasAnnotation(BOTTOM)) {
-                checker.reportError(node, "uts.new.ownership");
-            }
-        } else {
-            if (!(type.hasAnnotation(PEER) || type.hasAnnotation(REP))) {
-                checker.reportError(node, "uts.new.ownership");
-            }
+        if (UniverseTypeUtil.isImplicitlyBottomType(type) && !type.hasAnnotation(BOTTOM)) {
+            checker.reportError(node, "uts.new.ownership");
+        } else if (!(type.hasAnnotation(PEER) || type.hasAnnotation(REP))) {
+            checker.reportError(node, "uts.new.ownership");
         }
     }
 
@@ -184,32 +178,30 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
      */
     @Override
     public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
+        var methodType = atypeFactory.methodFromUse(node).executableType;
 
-        AnnotatedExecutableType methodType = atypeFactory.methodFromUse(node).executableType;
         // Check for @Lost in combined parameter types deeply.
-        for (AnnotatedTypeMirror parameterType : methodType.getParameterTypes()) {
+        for (var parameterType : methodType.getParameterTypes()) {
             if (AnnotatedTypes.containsModifier(parameterType, LOST)) {
                 checker.reportError(node, "uts.lost.parameter");
             }
         }
 
-        if (checkOaM) {
-            ExpressionTree receiverTree = TreeUtils.getReceiverTree(node.getMethodSelect());
-            if (receiverTree != null) {
-                AnnotatedTypeMirror receiverType = atypeFactory.getAnnotatedType(receiverTree);
+        if (!checkOaM) return super.visitMethodInvocation(node, p);
 
-                if (receiverType != null) {
-                    ExecutableElement methodElement = TreeUtils.elementFromUse(node);
-                    if (!UniverseTypeUtil.isPure(methodElement)) {
-                        // I would say this non-lost and non-any restriction is really for declared
-                        // types, not for type variables. As type variables can't have methods to
-                        // invoke.
-                        if (receiverType.hasAnnotation(LOST) || receiverType.hasAnnotation(ANY)) {
-                            checker.reportError(node, "oam.call.forbidden");
-                        }
-                    }
-                }
-            }
+        var receiverTree = TreeUtils.getReceiverTree(node.getMethodSelect());
+        if (receiverTree == null) return super.visitMethodInvocation(node, p);
+
+        var annotatedType = atypeFactory.getAnnotatedType(receiverTree);
+        if (annotatedType == null) return super.visitMethodInvocation(node, p);
+
+        // I would say this non-lost and non-any restriction is really for declared
+        // types, not for type variables. As type variables can't have methods to
+        // invoke.
+        var methodElement = TreeUtils.elementFromUse(node);
+        if (!UniverseTypeUtil.isPure(methodElement)
+                && (annotatedType.hasAnnotation(LOST) || annotatedType.hasAnnotation(ANY))) {
+            checker.reportError(node, "oam.call.forbidden");
         }
 
         return super.visitMethodInvocation(node, p);
@@ -223,30 +215,30 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
      */
     @Override
     public Void visitAssignment(AssignmentTree node, Void p) {
-        AnnotatedTypeMirror type = atypeFactory.getAnnotatedType(node.getVariable());
+        var type = atypeFactory.getAnnotatedType(node.getVariable());
+
         // Check for @Lost in left hand side of assignment deeply.
         if (AnnotatedTypes.containsModifier(type, LOST)) {
             checker.reportError(node, "uts.lost.lhs");
         }
 
-        if (checkOaM) {
-            ExpressionTree receiverTree = TreeUtils.getReceiverTree(node.getVariable());
-            if (receiverTree != null) {
-                AnnotatedTypeMirror receiverType = atypeFactory.getAnnotatedType(receiverTree);
-
-                if (receiverType != null) {
-                    // Still, I think receiver can still only be declared types, so
-                    // effectiveAnnotation
-                    // is not needed.
-                    if (receiverType.hasAnnotation(LOST) || receiverType.hasAnnotation(ANY)) {
-                        checker.reportError(node, "oam.assignment.forbidden");
-                    }
-                }
-            }
-        }
-
         if (checkStrictPurity && true /* TODO environment pure */) {
             checker.reportError(node, "purity.assignment.forbidden");
+        }
+
+        if (!checkOaM) return super.visitAssignment(node, p);
+
+        var receiverTree = TreeUtils.getReceiverTree(node.getVariable());
+        if (receiverTree == null) return super.visitAssignment(node, p);
+
+        // Still, I think receiver can still only be declared types, so
+        // effectiveAnnotation
+        // is not needed.
+        var receiverType = atypeFactory.getAnnotatedType(receiverTree);
+
+        if (receiverType != null
+                && (receiverType.hasAnnotation(LOST) || receiverType.hasAnnotation(ANY))) {
+            checker.reportError(node, "oam.assignment.forbidden");
         }
 
         return super.visitAssignment(node, p);
@@ -264,18 +256,17 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
     }
 
     protected void checkTypecastSafety(TypeCastTree node, Void p) {
-        if (!checker.getLintOption("cast:unsafe", true)) {
-            return;
-        }
-        AnnotatedTypeMirror castType = atypeFactory.getAnnotatedType(node);
-        AnnotatedTypeMirror exprType = atypeFactory.getAnnotatedType(node.getExpression());
+        if (!checker.getLintOption("cast:unsafe", true)) return;
+
+        var castType = atypeFactory.getAnnotatedType(node);
+        var exprType = atypeFactory.getAnnotatedType(node.getExpression());
 
         // We cannot do a simple test of casting, as isSubtypeOf requires
         // the input types to be subtypes according to Java
-        if (!isTypeCastSafe(castType, exprType)) {
-            checker.reportWarning(
-                    node, "cast.unsafe", exprType.toString(true), castType.toString(true));
-        }
+        if (isTypeCastSafe(castType, exprType)) return;
+
+        checker.reportWarning(
+                node, "cast.unsafe", exprType.toString(true), castType.toString(true));
     }
 
     @Override

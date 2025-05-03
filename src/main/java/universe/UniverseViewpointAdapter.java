@@ -54,6 +54,7 @@ public class UniverseViewpointAdapter extends AbstractViewpointAdapter {
                 return REP;
             }
         }
+
         return LOST;
     }
 }

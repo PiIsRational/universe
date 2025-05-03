@@ -12,11 +12,8 @@ import org.checkerframework.common.basetype.BaseTypeValidator;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.AnnotatedTypeParameterBounds;
 import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.javacutil.TreeUtils;
-
-import java.util.List;
 
 import javax.lang.model.element.TypeElement;
 
@@ -39,6 +36,7 @@ public class UniverseTypeValidator extends BaseTypeValidator {
         if (checkTopLevelDeclaredOrPrimitiveType) {
             checkImplicitlyBottomTypeError(type, p);
         }
+
         checkStaticRepError(type, p);
         // @Peer is allowed in static context
 
@@ -50,22 +48,19 @@ public class UniverseTypeValidator extends BaseTypeValidator {
     @Override
     protected Void visitParameterizedType(
             AnnotatedTypeMirror.AnnotatedDeclaredType type, ParameterizedTypeTree tree) {
-        if (TreeUtils.isDiamondTree(tree)) {
-            return null;
-        }
-        final TypeElement element = (TypeElement) type.getUnderlyingType().asElement();
-        if (checker.shouldSkipUses(element)) {
-            return null;
-        }
+        if (TreeUtils.isDiamondTree(tree)) return null;
 
-        List<AnnotatedTypeParameterBounds> typeParamBounds =
-                atypeFactory.typeVariablesFromUse(type, element);
-        for (AnnotatedTypeParameterBounds atpb : typeParamBounds) {
-            // Previously, here also checks two bounds are not TypeKind.NULL. What's the reason?
-            if (AnnotatedTypes.containsModifier(atpb.getUpperBound(), LOST)
-                    || AnnotatedTypes.containsModifier(atpb.getLowerBound(), LOST)) {
-                checker.reportError(tree, "uts.lost.in.bounds", atpb.toString(), type.toString());
+        final TypeElement element = (TypeElement) type.getUnderlyingType().asElement();
+        if (checker.shouldSkipUses(element)) return null;
+
+        var typeParamBounds = atypeFactory.typeVariablesFromUse(type, element);
+        for (var atpb : typeParamBounds) {
+            if (!AnnotatedTypes.containsModifier(atpb.getUpperBound(), LOST)
+                    && !AnnotatedTypes.containsModifier(atpb.getLowerBound(), LOST)) {
+                continue;
             }
+
+            checker.reportError(tree, "uts.lost.in.bounds", atpb.toString(), type.toString());
         }
 
         return super.visitParameterizedType(type, tree);
@@ -82,23 +77,23 @@ public class UniverseTypeValidator extends BaseTypeValidator {
         if (checkTopLevelDeclaredOrPrimitiveType) {
             checkImplicitlyBottomTypeError(type, tree);
         }
+
         return super.visitPrimitive(type, tree);
     }
 
     private void checkStaticRepError(AnnotatedTypeMirror type, Tree tree) {
-        if (UniverseTypeUtil.inStaticScope(visitor.getCurrentPath())) {
-            if (AnnotatedTypes.containsModifier(type, REP)) {
-                checker.reportError(
-                        tree, "uts.static.rep.forbidden", type.getAnnotations(), type.toString());
-            }
+        if (!UniverseTypeUtil.inStaticScope(visitor.getCurrentPath())
+                || !AnnotatedTypes.containsModifier(type, REP)) {
+            return;
         }
+
+        checker.reportError(
+                tree, "uts.static.rep.forbidden", type.getAnnotations(), type.toString());
     }
 
     private void checkImplicitlyBottomTypeError(AnnotatedTypeMirror type, Tree tree) {
-        if (UniverseTypeUtil.isImplicitlyBottomType(type)) {
-            if (!type.hasAnnotation(BOTTOM)) {
-                reportInvalidAnnotationsOnUse(type, tree);
-            }
+        if (UniverseTypeUtil.isImplicitlyBottomType(type) && !type.hasAnnotation(BOTTOM)) {
+            reportInvalidAnnotationsOnUse(type, tree);
         }
     }
 }

@@ -6,6 +6,7 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.TypeCastTree;
 
+import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
@@ -27,7 +28,6 @@ import java.util.Set;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 
-import checkers.inference.BaseInferenceRealTypeFactory;
 import universe.qual.Any;
 import universe.qual.Bottom;
 import universe.qual.Lost;
@@ -40,20 +40,19 @@ import universe.qual.Self;
  *
  * @author wmdietl
  */
-public class UniverseAnnotatedTypeFactory extends BaseInferenceRealTypeFactory {
+public class UniverseAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
-    public UniverseAnnotatedTypeFactory(BaseTypeChecker checker, boolean infer) {
-        super(checker, infer);
+    public UniverseAnnotatedTypeFactory(BaseTypeChecker checker) {
+        // always use dataflow analysis, since we do not do any inference
+        super(checker, true);
         this.postInit();
     }
 
     /** The type of "this" is always "self". */
     @Override
     public AnnotatedDeclaredType getSelfType(Tree tree) {
-        AnnotatedDeclaredType type = super.getSelfType(tree);
-        if (type != null) {
-            type.replaceAnnotation(UniverseAnnotationMirrorHolder.SELF);
-        }
+        var type = super.getSelfType(tree);
+        if (type != null) type.replaceAnnotation(UniverseAnnotationMirrorHolder.SELF);
         return type;
     }
 
@@ -77,16 +76,11 @@ public class UniverseAnnotatedTypeFactory extends BaseInferenceRealTypeFactory {
 
     @Override
     protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
-        Set<Class<? extends Annotation>> annotations =
-                new HashSet<>(
-                        Arrays.asList(
-                                Any.class,
-                                Lost.class,
-                                Peer.class,
-                                Rep.class,
-                                Self.class,
-                                Bottom.class));
-        return Collections.unmodifiableSet(annotations);
+        var annotations =
+                Arrays.asList(
+                        Any.class, Lost.class, Peer.class, Rep.class, Self.class, Bottom.class);
+
+        return Collections.unmodifiableSet(new HashSet<>(annotations));
     }
 
     @Override
@@ -98,7 +92,7 @@ public class UniverseAnnotatedTypeFactory extends BaseInferenceRealTypeFactory {
     /** Replace annotation of extends or implements clause with SELF in Universe. */
     @Override
     public AnnotatedTypeMirror getTypeOfExtendsImplements(Tree clause) {
-        AnnotatedTypeMirror s = super.getTypeOfExtendsImplements(clause);
+        var s = super.getTypeOfExtendsImplements(clause);
         s.replaceAnnotation(UniverseAnnotationMirrorHolder.SELF);
         return s;
     }
@@ -132,6 +126,7 @@ public class UniverseAnnotatedTypeFactory extends BaseInferenceRealTypeFactory {
         @Override
         public Void visitMethod(MethodTree node, AnnotatedTypeMirror p) {
             ExecutableElement executableElement = TreeUtils.elementFromDeclaration(node);
+
             UniverseTypeUtil.defaultConstructorReturnToSelf(executableElement, p);
             return super.visitMethod(node, p);
         }
@@ -176,10 +171,10 @@ public class UniverseAnnotatedTypeFactory extends BaseInferenceRealTypeFactory {
          * annotation on type
          */
         private void applyImmutableIfImplicitlyBottom(AnnotatedTypeMirror type) {
-            if (UniverseTypeUtil.isImplicitlyBottomType(type)) {
-                type.addMissingAnnotations(
-                        new HashSet<>(Arrays.asList(UniverseAnnotationMirrorHolder.BOTTOM)));
-            }
+            if (!UniverseTypeUtil.isImplicitlyBottomType(type)) return;
+
+            var bottomList = Arrays.asList(UniverseAnnotationMirrorHolder.BOTTOM);
+            type.addMissingAnnotations(new HashSet<>(bottomList));
         }
     }
 }
