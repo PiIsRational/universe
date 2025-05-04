@@ -50,7 +50,7 @@ public class UniverseTypeValidator extends BaseTypeValidator {
             AnnotatedTypeMirror.AnnotatedDeclaredType type, ParameterizedTypeTree tree) {
         if (TreeUtils.isDiamondTree(tree)) return null;
 
-        final TypeElement element = (TypeElement) type.getUnderlyingType().asElement();
+        final var element = (TypeElement) type.getUnderlyingType().asElement();
         if (checker.shouldSkipUses(element)) return null;
 
         var typeParamBounds = atypeFactory.typeVariablesFromUse(type, element);
