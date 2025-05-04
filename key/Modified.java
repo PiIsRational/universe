@@ -1,3 +1,5 @@
+import universe.qual.Rep;
+
 class Client {
     /*@ normal_behaviour
     @  requires t1.isConst(0);

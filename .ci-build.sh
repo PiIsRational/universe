@@ -9,5 +9,5 @@ export SHELLOPTS
 
 . ./.ci-build-without-test.sh
 
+# the tests are included in the check step
 ./gradlew check
-./gradlew test
