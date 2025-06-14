@@ -3,12 +3,14 @@ package universe;
 import static universe.UniverseAnnotationMirrorHolder.ANY;
 import static universe.UniverseAnnotationMirrorHolder.BOTTOM;
 import static universe.UniverseAnnotationMirrorHolder.LOST;
+import static universe.UniverseAnnotationMirrorHolder.PAYLOAD;
 import static universe.UniverseAnnotationMirrorHolder.PEER;
 import static universe.UniverseAnnotationMirrorHolder.REP;
 import static universe.UniverseAnnotationMirrorHolder.SELF;
 
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewArrayTree;
@@ -35,14 +37,12 @@ import javax.lang.model.type.TypeKind;
  */
 public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactory> {
 
-    private final boolean checkOaM;
-    private final boolean checkStrictPurity;
+    private final boolean anyWritable;
 
     public UniverseVisitor(UniverseChecker checker, BaseAnnotatedTypeFactory factory) {
         super(checker, (UniverseAnnotatedTypeFactory) factory);
 
-        checkOaM = checker.getLintOption("checkOaM", false);
-        checkStrictPurity = checker.getLintOption("checkStrictPurity", false);
+        anyWritable = checker.getLintOption("anyWritable", false);
     }
 
     /** The type validator to ensure correct usage of ownership modifiers. */
@@ -187,17 +187,18 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
             }
         }
 
-        if (!checkOaM) return super.visitMethodInvocation(node, p);
-
         var receiverTree = TreeUtils.getReceiverTree(node.getMethodSelect());
         if (receiverTree == null) return super.visitMethodInvocation(node, p);
 
         var annotatedType = atypeFactory.getAnnotatedType(receiverTree);
         if (annotatedType == null) return super.visitMethodInvocation(node, p);
 
-        // I would say this non-lost and non-any restriction is really for declared
-        // types, not for type variables. As type variables can't have methods to
-        // invoke.
+        if (annotatedType.hasAnnotation(PAYLOAD)) {
+            checker.reportError(node, "oam.call.forbidden");
+        }
+
+        if (anyWritable) return super.visitMethodInvocation(node, p);
+
         var methodElement = TreeUtils.elementFromUse(node);
         if (!UniverseTypeUtil.isPure(methodElement)
                 && (annotatedType.hasAnnotation(LOST) || annotatedType.hasAnnotation(ANY))) {
@@ -222,12 +223,6 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
             checker.reportError(node, "uts.lost.lhs");
         }
 
-        if (checkStrictPurity && true /* TODO environment pure */) {
-            checker.reportError(node, "purity.assignment.forbidden");
-        }
-
-        if (!checkOaM) return super.visitAssignment(node, p);
-
         var receiverTree = TreeUtils.getReceiverTree(node.getVariable());
         if (receiverTree == null) return super.visitAssignment(node, p);
 
@@ -237,6 +232,7 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
         var receiverType = atypeFactory.getAnnotatedType(receiverTree);
 
         if (receiverType != null
+                && !anyWritable
                 && (receiverType.hasAnnotation(LOST) || receiverType.hasAnnotation(ANY))) {
             checker.reportError(node, "oam.assignment.forbidden");
         }
@@ -246,13 +242,37 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
 
     @Override
     public Void visitTypeCast(TypeCastTree node, Void p) {
-        AnnotatedTypeMirror castty = atypeFactory.getAnnotatedType(node.getType());
+        // Cannot cast a Payload
+        var casteeType = atypeFactory.getAnnotatedType(node.getExpression());
+        if (casteeType.hasAnnotation(PAYLOAD)) {
+            checker.reportError(node, "uts.cast.type.payload.error");
+        }
 
+        var castty = atypeFactory.getAnnotatedType(node.getType());
         if (AnnotatedTypes.containsModifier(castty, LOST)) {
             checker.reportWarning(node, "uts.cast.type.warning", castty);
         }
 
         return super.visitTypeCast(node, p);
+    }
+
+    @Override
+    public Void visitIdentifier(IdentifierTree identifierTree, Void p) {
+        var memberSel = enclosingMemberSelect();
+        var tree = memberSel == null ? identifierTree : memberSel;
+        var elem = TreeUtils.elementFromUse(tree);
+
+        if (elem == null || !elem.getKind().isField()) {
+            return super.visitIdentifier(identifierTree, p);
+        }
+
+        var receiver = atypeFactory.getReceiverType(tree);
+
+        if (receiver != null && receiver.hasAnnotation(PAYLOAD)) {
+            checker.reportError(identifierTree, "uts.payload.fieldaccess.forbidden");
+        }
+
+        return super.visitIdentifier(identifierTree, p);
     }
 
     protected void checkTypecastSafety(TypeCastTree node, Void p) {

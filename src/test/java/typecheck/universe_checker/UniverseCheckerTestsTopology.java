@@ -15,7 +15,8 @@ public class UniverseCheckerTestsTopology extends CheckerFrameworkPerDirectoryTe
                 "-Anomsgtext",
                 "-AconservativeUninferredTypeArguments",
                 "-d",
-                "testTmp");
+                "testTmp",
+                "-Alint=anyWritable");
     }
 
     @Parameters

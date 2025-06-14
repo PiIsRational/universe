@@ -10,6 +10,7 @@ import javax.lang.model.util.Elements;
 import universe.qual.Any;
 import universe.qual.Bottom;
 import universe.qual.Lost;
+import universe.qual.Payload;
 import universe.qual.Peer;
 import universe.qual.Rep;
 import universe.qual.Self;
@@ -17,7 +18,7 @@ import universe.qual.Self;
 /** Class that declares the AnnotationMirrors used by typecheck and inference */
 public class UniverseAnnotationMirrorHolder {
 
-    public static AnnotationMirror ANY, PEER, REP, LOST, SELF, BOTTOM, PURE;
+    public static AnnotationMirror ANY, PEER, REP, LOST, SELF, BOTTOM, PURE, PAYLOAD;
 
     public static void init(SourceChecker checker) {
         Elements elements = checker.getElementUtils();
@@ -28,5 +29,6 @@ public class UniverseAnnotationMirrorHolder {
         SELF = AnnotationBuilder.fromClass(elements, Self.class);
         BOTTOM = AnnotationBuilder.fromClass(elements, Bottom.class);
         PURE = AnnotationBuilder.fromClass(elements, Pure.class);
+        PAYLOAD = AnnotationBuilder.fromClass(elements, Payload.class);
     }
 }

@@ -46,5 +46,6 @@ else
 	cmd+=$DEBUG" -cp "${CLASSPATH}" -processor "${CHECKER}" -AatfDoNotCache "$@""
 fi
 
+eval "javac -version"
 echo "$cmd"
 eval "$cmd"

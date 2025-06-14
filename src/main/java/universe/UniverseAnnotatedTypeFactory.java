@@ -31,6 +31,7 @@ import javax.lang.model.element.ExecutableElement;
 import universe.qual.Any;
 import universe.qual.Bottom;
 import universe.qual.Lost;
+import universe.qual.Payload;
 import universe.qual.Peer;
 import universe.qual.Rep;
 import universe.qual.Self;
@@ -78,7 +79,13 @@ public class UniverseAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
         var annotations =
                 Arrays.asList(
-                        Any.class, Lost.class, Peer.class, Rep.class, Self.class, Bottom.class);
+                        Any.class,
+                        Lost.class,
+                        Peer.class,
+                        Rep.class,
+                        Self.class,
+                        Bottom.class,
+                        Payload.class);
 
         return Collections.unmodifiableSet(new HashSet<>(annotations));
     }

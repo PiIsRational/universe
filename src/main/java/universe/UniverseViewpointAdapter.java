@@ -3,6 +3,7 @@ package universe;
 import static universe.UniverseAnnotationMirrorHolder.ANY;
 import static universe.UniverseAnnotationMirrorHolder.BOTTOM;
 import static universe.UniverseAnnotationMirrorHolder.LOST;
+import static universe.UniverseAnnotationMirrorHolder.PAYLOAD;
 import static universe.UniverseAnnotationMirrorHolder.PEER;
 import static universe.UniverseAnnotationMirrorHolder.REP;
 import static universe.UniverseAnnotationMirrorHolder.SELF;
@@ -38,6 +39,8 @@ public class UniverseViewpointAdapter extends AbstractViewpointAdapter {
             return BOTTOM;
         } else if (AnnotationUtils.areSame(declaredAnnotation, ANY)) {
             return ANY;
+        } else if (AnnotationUtils.areSame(declaredAnnotation, PAYLOAD)) {
+            return PAYLOAD;
         } else if (AnnotationUtils.areSame(declaredAnnotation, SELF)) {
             return receiverAnnotation;
         } else if (AnnotationUtils.areSame(receiverAnnotation, BOTTOM)) {

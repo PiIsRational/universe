@@ -16,7 +16,7 @@ import javax.annotation.processing.SupportedOptions;
  * messager.printMessage(javax.tools.Diagnostic.Kind.WARNING, "message");
  */
 @SupportedOptions({"warn"})
-@SupportedLintOptions({"allowLost", "checkOaM", "checkStrictPurity"})
+@SupportedLintOptions({"allowLost", "anyWritable"})
 public class UniverseChecker extends BaseTypeChecker {
 
     @Override

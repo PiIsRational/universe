@@ -9,13 +9,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * The Any modifier expresses no static ownership information, the referenced object can have any
- * owner.
+ * The Payload modifier expresses that the underlying object cannot be accessed in any way.
  *
- * @author wmdietl
+ * @author Daniel Grévent
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_PARAMETER, ElementType.TYPE_USE})
-@SubtypeOf({Payload.class})
-public @interface Any {}
+@SubtypeOf({})
+public @interface Payload {}
