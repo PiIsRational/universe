@@ -25,6 +25,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.util.AnnotatedTypes;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 
 import javax.lang.model.element.ExecutableElement;
@@ -242,13 +243,14 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
 
     @Override
     public Void visitTypeCast(TypeCastTree node, Void p) {
+        var castty = atypeFactory.getAnnotatedType(node.getType());
+
         // Cannot cast a Payload
         var casteeType = atypeFactory.getAnnotatedType(node.getExpression());
-        if (casteeType.hasAnnotation(PAYLOAD)) {
+        if (casteeType.hasAnnotation(PAYLOAD) && !castty.hasAnnotation(PAYLOAD)) {
             checker.reportError(node, "uts.cast.type.payload.error");
         }
 
-        var castty = atypeFactory.getAnnotatedType(node.getType());
         if (AnnotatedTypes.containsModifier(castty, LOST)) {
             checker.reportWarning(node, "uts.cast.type.warning", castty);
         }

@@ -9,7 +9,6 @@ import org.checkerframework.javacutil.TypesUtils;
 
 import java.util.Arrays;
 
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -57,6 +56,22 @@ public class UniverseTypeUtil {
         return isInTypesOfImplicitForOfBottom(atm) || isInTypeNamesOfImplicitForOfBottom(atm);
     }
 
+    private static boolean isRepOnly(DeclaredType anno) {
+        System.out.println(anno.toString());
+        return anno.toString().equals(universe.qual.RepOnly.class.getName());
+    }
+
+    public static boolean isRepOnly(ExecutableElement executableElement) {
+        var annots = executableElement.getAnnotationMirrors();
+
+        for (var an : annots) {
+            if (!isRepOnly(an.getAnnotationType())) continue;
+            return true;
+        }
+
+        return false;
+    }
+
     private static boolean isPure(DeclaredType anno) {
         return anno.toString().equals(universe.qual.Pure.class.getName())
                 || anno.toString().equals(org.jmlspecs.annotation.Pure.class.getName());
@@ -65,7 +80,7 @@ public class UniverseTypeUtil {
     public static boolean isPure(ExecutableElement executableElement) {
         var anns = executableElement.getAnnotationMirrors();
 
-        for (AnnotationMirror an : anns) {
+        for (var an : anns) {
             if (!isPure(an.getAnnotationType())) continue;
             return true;
         }
