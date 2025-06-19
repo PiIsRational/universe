@@ -188,8 +188,23 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
             }
         }
 
+        var methodElement = TreeUtils.elementFromUse(node);
+        var enclosingMethod = TreePathUtil.enclosingMethod(getCurrentPath());
+
+        var isRepOnly = false;
+        if (enclosingMethod != null) {
+            var enclosingMethodElement = TreeUtils.elementFromDeclaration(enclosingMethod);
+            isRepOnly = UniverseTypeUtil.isRepOnly(enclosingMethodElement);
+        }
+
         var receiverTree = TreeUtils.getReceiverTree(node.getMethodSelect());
-        if (receiverTree == null) return super.visitMethodInvocation(node, p);
+        if (receiverTree == null) {
+            if (isRepOnly && !UniverseTypeUtil.isRepOnly(methodElement)) {
+                checker.reportError(node, "uts.reponly.call.self.forbidden", methodType);
+            }
+
+            return super.visitMethodInvocation(node, p);
+        }
 
         var annotatedType = atypeFactory.getAnnotatedType(receiverTree);
         if (annotatedType == null) return super.visitMethodInvocation(node, p);
@@ -198,9 +213,18 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
             checker.reportError(node, "oam.call.forbidden");
         }
 
+        if (isRepOnly) {
+            if (AnnotatedTypes.containsModifier(annotatedType, SELF)) {
+                if (!UniverseTypeUtil.isRepOnly(methodElement)) {
+                    checker.reportError(node, "uts.reponly.call.self.forbidden", methodType);
+                }
+            } else if (!AnnotatedTypes.containsModifier(annotatedType, REP)) {
+                checker.reportError(receiverTree, "uts.reponly.call.other.forbidden");
+            }
+        }
+
         if (anyWritable) return super.visitMethodInvocation(node, p);
 
-        var methodElement = TreeUtils.elementFromUse(node);
         if (!UniverseTypeUtil.isPure(methodElement)
                 && (annotatedType.hasAnnotation(LOST) || annotatedType.hasAnnotation(ANY))) {
             checker.reportError(node, "oam.call.forbidden");
@@ -247,7 +271,8 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
 
         // Cannot cast a Payload
         var casteeType = atypeFactory.getAnnotatedType(node.getExpression());
-        if (casteeType.hasAnnotation(PAYLOAD) && !castty.hasAnnotation(PAYLOAD)) {
+        if (AnnotatedTypes.containsModifier(casteeType, PAYLOAD)
+                && !AnnotatedTypes.containsModifier(castty, PAYLOAD)) {
             checker.reportError(node, "uts.cast.type.payload.error");
         }
 

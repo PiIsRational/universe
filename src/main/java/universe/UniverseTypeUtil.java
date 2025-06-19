@@ -57,7 +57,6 @@ public class UniverseTypeUtil {
     }
 
     private static boolean isRepOnly(DeclaredType anno) {
-        System.out.println(anno.toString());
         return anno.toString().equals(universe.qual.RepOnly.class.getName());
     }
 
