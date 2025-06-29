@@ -17,7 +17,7 @@ public class RepOnlyTest {
         // :: error: (uts.reponly.call.self.forbidden)
         this.n();
 
-        // should workd
+        // should work
         this.k();
 
         // should work

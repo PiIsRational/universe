@@ -18,7 +18,6 @@ import javax.annotation.processing.SupportedOptions;
 @SupportedOptions({"warn"})
 @SupportedLintOptions({"allowLost", "anyWritable"})
 public class UniverseChecker extends BaseTypeChecker {
-
     @Override
     public void initChecker() {
         super.initChecker();

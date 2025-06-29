@@ -72,8 +72,7 @@ public class UniverseTypeUtil {
     }
 
     private static boolean isPure(DeclaredType anno) {
-        return anno.toString().equals(universe.qual.Pure.class.getName())
-                || anno.toString().equals(org.jmlspecs.annotation.Pure.class.getName());
+        return anno.toString().equals(org.checkerframework.dataflow.qual.Pure.class.getName());
     }
 
     public static boolean isPure(ExecutableElement executableElement) {
