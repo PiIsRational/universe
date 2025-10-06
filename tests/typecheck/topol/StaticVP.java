@@ -20,6 +20,10 @@ public class StaticVP {
     // ok
     static @Any Object a;
 
+    public static void main(String[] args) {
+        @Peer Object a = args;
+    }
+
     static void bar() {
         // :: error: (uts.static.rep.forbidden)
         @Rep Object or;
