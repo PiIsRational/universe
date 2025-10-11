@@ -5,6 +5,7 @@ import universe.qual.*;
 public class RepOnlyTest {
     @Rep Under u;
     @Peer Under i;
+    @Payload Under p;
 
     @RepOnly
     void m() {
@@ -28,6 +29,9 @@ public class RepOnlyTest {
 
         // :: error: (uts.reponly.call.other.forbidden)
         i.bar();
+
+        @Payload Under q = p;
+        p = q;
     }
 
     void n() {}

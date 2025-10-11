@@ -62,13 +62,13 @@ final class Tree<T extends @Payload Comparable<T>> {
     public void append(T v) {
         if (v.compareTo(value) <= 0) {
             if (left == null) {
-                left = new @Rep Tree(v);
+                left = new @Rep Tree<T>(v);
             } else {
                 left.append(v);
             }
         } else {
             if (right == null) {
-                right = new @Rep Tree(v);
+                right = new @Rep Tree<T>(v);
             } else {
                 right.append(v);
             }
