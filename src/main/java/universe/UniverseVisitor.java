@@ -6,6 +6,7 @@ import static universe.UniverseAnnotationMirrorHolder.LOST;
 import static universe.UniverseAnnotationMirrorHolder.PAYLOAD;
 import static universe.UniverseAnnotationMirrorHolder.PEER;
 import static universe.UniverseAnnotationMirrorHolder.REP;
+import static universe.UniverseAnnotationMirrorHolder.DOM;
 import static universe.UniverseAnnotationMirrorHolder.SELF;
 
 import com.sun.source.tree.AssignmentTree;
@@ -218,7 +219,8 @@ public class UniverseVisitor extends BaseTypeVisitor<UniverseAnnotatedTypeFactor
                 if (!UniverseTypeUtil.isRepOnly(methodElement)) {
                     checker.reportError(node, "uts.reponly.call.self.forbidden", methodType);
                 }
-            } else if (!AnnotatedTypes.containsModifier(annotatedType, REP)) {
+            } else if (!AnnotatedTypes.containsModifier(annotatedType, REP) 
+                    && !AnnotatedTypes.containsModifier(annotatedType, DOM)) {
                 checker.reportError(receiverTree, "uts.reponly.call.other.forbidden");
             }
         }

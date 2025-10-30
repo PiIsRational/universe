@@ -3,6 +3,7 @@ package universe;
 import static universe.UniverseAnnotationMirrorHolder.BOTTOM;
 import static universe.UniverseAnnotationMirrorHolder.LOST;
 import static universe.UniverseAnnotationMirrorHolder.REP;
+import static universe.UniverseAnnotationMirrorHolder.DOM;
 
 import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.Tree;
@@ -37,7 +38,7 @@ public class UniverseTypeValidator extends BaseTypeValidator {
             checkImplicitlyBottomTypeError(type, p);
         }
 
-        checkStaticRepError(type, p);
+        checkStaticDomError(type, p);
         // @Peer is allowed in static context
 
         // This will be handled at higher level
@@ -68,7 +69,7 @@ public class UniverseTypeValidator extends BaseTypeValidator {
 
     @Override
     public Void visitArray(AnnotatedTypeMirror.AnnotatedArrayType type, Tree tree) {
-        checkStaticRepError(type, tree);
+        checkStaticDomError(type, tree);
         return super.visitArray(type, tree);
     }
 
@@ -81,14 +82,16 @@ public class UniverseTypeValidator extends BaseTypeValidator {
         return super.visitPrimitive(type, tree);
     }
 
-    private void checkStaticRepError(AnnotatedTypeMirror type, Tree tree) {
-        if (!UniverseTypeUtil.inStaticScope(visitor.getCurrentPath())
-                || !AnnotatedTypes.containsModifier(type, REP)) {
-            return;
-        }
+    private void checkStaticDomError(AnnotatedTypeMirror type, Tree tree) {
+        if (!UniverseTypeUtil.inStaticScope(visitor.getCurrentPath())) return;
 
-        checker.reportError(
+        if (AnnotatedTypes.containsModifier(type, REP)) {
+            checker.reportError(
                 tree, "uts.static.rep.forbidden", type.getAnnotations(), type.toString());
+        } else if (AnnotatedTypes.containsModifier(type, DOM)) {
+            checker.reportError(
+                tree, "uts.static.dom.forbidden", type.getAnnotations(), type.toString());
+        }
     }
 
     private void checkImplicitlyBottomTypeError(AnnotatedTypeMirror type, Tree tree) {

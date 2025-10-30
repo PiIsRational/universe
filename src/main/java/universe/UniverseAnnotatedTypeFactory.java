@@ -35,6 +35,7 @@ import universe.qual.Payload;
 import universe.qual.Peer;
 import universe.qual.Rep;
 import universe.qual.Self;
+import universe.qual.Dom;
 
 /**
  * Apply viewpoint adaptation and add implicit annotations to "this" and "super".
@@ -85,7 +86,8 @@ public class UniverseAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                         Rep.class,
                         Self.class,
                         Bottom.class,
-                        Payload.class);
+                        Payload.class,
+                        Dom.class);
 
         return Collections.unmodifiableSet(new HashSet<>(annotations));
     }

@@ -13,13 +13,14 @@ import universe.qual.Lost;
 import universe.qual.Payload;
 import universe.qual.Peer;
 import universe.qual.Rep;
+import universe.qual.Dom;
 import universe.qual.RepOnly;
 import universe.qual.Self;
 
 /** Class that declares the AnnotationMirrors used by typecheck and inference */
 public class UniverseAnnotationMirrorHolder {
 
-    public static AnnotationMirror ANY, PEER, REP, LOST, SELF, BOTTOM, PURE, PAYLOAD, REP_ONLY;
+    public static AnnotationMirror ANY, PEER, REP, LOST, SELF, BOTTOM, PURE, PAYLOAD, REP_ONLY, DOM;
 
     public static void init(SourceChecker checker) {
         Elements elements = checker.getElementUtils();
@@ -32,5 +33,6 @@ public class UniverseAnnotationMirrorHolder {
         PURE = AnnotationBuilder.fromClass(elements, Pure.class);
         PAYLOAD = AnnotationBuilder.fromClass(elements, Payload.class);
         REP_ONLY = AnnotationBuilder.fromClass(elements, RepOnly.class);
+        DOM = AnnotationBuilder.fromClass(elements, Dom.class);
     }
 }

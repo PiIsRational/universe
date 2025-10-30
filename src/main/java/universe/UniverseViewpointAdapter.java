@@ -6,6 +6,7 @@ import static universe.UniverseAnnotationMirrorHolder.LOST;
 import static universe.UniverseAnnotationMirrorHolder.PAYLOAD;
 import static universe.UniverseAnnotationMirrorHolder.PEER;
 import static universe.UniverseAnnotationMirrorHolder.REP;
+import static universe.UniverseAnnotationMirrorHolder.DOM;
 import static universe.UniverseAnnotationMirrorHolder.SELF;
 
 import org.checkerframework.framework.type.AbstractViewpointAdapter;
@@ -55,8 +56,15 @@ public class UniverseViewpointAdapter extends AbstractViewpointAdapter {
                 return PEER;
             } else if (AnnotationUtils.areSame(receiverAnnotation, REP)) {
                 return REP;
+            } else if (AnnotationUtils.areSame(receiverAnnotation, DOM)) {
+                return DOM;
             }
-        }
+        } else if (AnnotationUtils.areSame(declaredAnnotation, REP)
+                || AnnotationUtils.areSame(declaredAnnotation, DOM)) {
+            if (AnnotationUtils.areSame(declaredAnnotation, DOM)) {
+                return DOM;
+            }
+        } 
 
         return LOST;
     }
