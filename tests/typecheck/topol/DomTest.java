@@ -5,9 +5,9 @@ import universe.qual.Rep;
 import universe.qual.Payload;
 
 class List {
-    @Dom Node first;
-    @Dom Node last;
-    int size;
+    public @Dom Node first;
+    public @Dom Node last;
+    public int size;
 
     public List() {
         first = null;
@@ -19,14 +19,13 @@ class List {
         return size;
     }
 
-
     public @Payload Object get(int index) {
         if(index < 0 || size <= index) {
             throw new IndexOutOfBoundsException();
         }
 
         @Dom Node node = first;
-        for(int i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             node = node.next;
         }
 

@@ -206,6 +206,8 @@ spotless {
                 .addTypeAnnotation("Peer")
                 .addTypeAnnotation("Rep")
                 .addTypeAnnotation("Self")
+                .addTypeAnnotation("RepOnly")
+                .addTypeAnnotation("Payload")
     }
 
     groovyGradle {
